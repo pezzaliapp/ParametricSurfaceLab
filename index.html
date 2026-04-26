@@ -4,93 +4,314 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Parametric Surface Lab</title>
+  <meta name="theme-color" content="#05070d"/>
   <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="assets/icon-192.png">
   <style>
-    body { margin:0; background:#05070d; color:white; font-family:system-ui; overflow:hidden;}
-    #panel {position:fixed; top:16px; left:16px; background:rgba(0,0,0,0.7); padding:16px; border-radius:12px;}
+    :root{
+      --bg:#05070d;
+      --panel:rgba(0,0,0,.72);
+      --cyan:#19b9ff;
+      --cyan2:#31eaff;
+      --text:#f4fbff;
+      --muted:#a9bfd2;
+    }
+    *{box-sizing:border-box}
+    html,body{
+      margin:0;
+      height:100%;
+      background:var(--bg);
+      color:var(--text);
+      font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+      overflow:hidden;
+    }
+    canvas{display:block}
+    #panel{
+      position:fixed;
+      top:18px;
+      left:18px;
+      z-index:10;
+      width:330px;
+      max-width:calc(100vw - 36px);
+      background:var(--panel);
+      border:1px solid var(--cyan);
+      border-radius:18px;
+      padding:16px;
+      box-shadow:0 0 24px rgba(0,170,255,.65);
+      backdrop-filter:blur(12px);
+    }
+    h1{
+      margin:0 0 10px;
+      font-size:20px;
+      letter-spacing:-.02em;
+    }
+    .formula{
+      font-family:Georgia,serif;
+      color:#e9f7ff;
+      line-height:1.45;
+      margin-bottom:12px;
+      font-weight:700;
+      font-size:16px;
+    }
+    .row{
+      display:grid;
+      grid-template-columns:92px 1fr 44px;
+      gap:8px;
+      align-items:center;
+      margin:10px 0;
+      font-size:13px;
+      color:#ecf9ff;
+    }
+    input[type=range]{width:100%; accent-color:#159dff}
+    .value{
+      text-align:right;
+      color:#d9f7ff;
+      font-variant-numeric:tabular-nums;
+    }
+    .buttons{
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:8px;
+      margin-top:12px;
+    }
+    button,select{
+      border:1px solid rgba(49,234,255,.4);
+      border-radius:11px;
+      background:#101722;
+      color:white;
+      padding:10px;
+      font-weight:800;
+      cursor:pointer;
+    }
+    button.primary{
+      background:linear-gradient(180deg,#25bfff,#1099e6);
+      color:#00111f;
+      border:none;
+    }
+    select{
+      width:100%;
+      margin:6px 0 8px;
+      font-weight:700;
+    }
+    .small{
+      color:var(--muted);
+      font-size:12px;
+      margin-top:8px;
+      line-height:1.35;
+    }
+    #badge{
+      position:fixed;
+      right:16px;
+      bottom:14px;
+      z-index:10;
+      color:#7f98aa;
+      font-size:12px;
+      opacity:.85;
+    }
+    @media(max-width:700px){
+      #panel{width:300px; transform:scale(.92); transform-origin:top left;}
+      #badge{display:none}
+    }
   </style>
 </head>
 <body>
-<div id="panel">
-  <h3>Parametric Surface Lab</h3>
-  <label>c <input id="c" type="range" min="0.2" max="5" step="0.1" value="2"></label><br>
-  <label>u <input id="u" type="range" min="2" max="10" step="0.5" value="5"></label>
-</div>
+  <div id="panel">
+    <h1>Parametric Surface Lab</h1>
+    <div class="formula">
+      x = r cos(v)<br>
+      y = r sin(v)<br>
+      z = c sin(kv)
+    </div>
 
-<script src="https://unpkg.com/three@0.128.0/build/three.min.js"></script>
-<script src="https://unpkg.com/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <select id="mode">
+      <option value="classic">Classic reglata</option>
+      <option value="twist">Twist / torsione</option>
+      <option value="flower">Radial flower</option>
+    </select>
 
-<script>
-let scene=new THREE.Scene();
-scene.background=new THREE.Color(0x05070d);
+    <div class="row"><span>Altezza c</span><input id="amp" type="range" min="0" max="5" step="0.1" value="2"><span class="value" id="ampV">2.0</span></div>
+    <div class="row"><span>Raggio u</span><input id="radius" type="range" min="2" max="10" step="0.1" value="5"><span class="value" id="radiusV">5.0</span></div>
+    <div class="row"><span>Frequenza k</span><input id="freq" type="range" min="1" max="12" step="1" value="2"><span class="value" id="freqV">2</span></div>
+    <div class="row"><span>Torsione</span><input id="twist" type="range" min="-2" max="2" step="0.05" value="0"><span class="value" id="twistV">0.00</span></div>
+    <div class="row"><span>Radiale</span><input id="radial" type="range" min="0" max="2.5" step="0.05" value="0"><span class="value" id="radialV">0.00</span></div>
 
-let camera=new THREE.PerspectiveCamera(55,innerWidth/innerHeight,0.1,1000);
-camera.position.set(8,-10,7);
+    <div class="buttons">
+      <button class="primary" id="reset">Reset vista</button>
+      <button id="anim">Animazione ON</button>
+      <button id="grid">Griglia ON</button>
+      <button id="preset">Preset bello</button>
+    </div>
+    <div class="small">Mouse/touch: ruota, zoom, sposta. Tutto gira nel browser, senza backend.</div>
+  </div>
+  <div id="badge">PezzaliAPP · ParametricSurfaceLab</div>
 
-let renderer=new THREE.WebGLRenderer({antialias:true});
-renderer.setSize(innerWidth,innerHeight);
-document.body.appendChild(renderer.domElement);
+  <script src="https://unpkg.com/three@0.128.0/build/three.min.js"></script>
+  <script src="https://unpkg.com/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+  <script>
+    let scene, camera, renderer, controls, surface, wire, grid, axes;
+    let time = 0, animateShape = true, gridOn = true;
 
-let controls=new THREE.OrbitControls(camera,renderer.domElement);
+    const p = { amp:2, radius:5, freq:2, twist:0, radial:0, mode:"classic" };
 
-scene.add(new THREE.AmbientLight(0xffffff,0.5));
-let light=new THREE.DirectionalLight(0xffffff,1);
-light.position.set(5,-5,8);
-scene.add(light);
+    init();
+    build();
+    loop();
 
-let mesh, wire;
-let c=2, umax=5;
+    function init(){
+      scene = new THREE.Scene();
+      scene.background = new THREE.Color(0x05070d);
 
-function build(){
-  if(mesh) scene.remove(mesh);
-  if(wire) scene.remove(wire);
+      camera = new THREE.PerspectiveCamera(55, innerWidth/innerHeight, .1, 1000);
+      camera.position.set(8,-10,7);
 
-  let g=new THREE.BufferGeometry();
-  let v=[], idx=[];
-  let us=60, vs=160;
+      renderer = new THREE.WebGLRenderer({antialias:true});
+      renderer.setSize(innerWidth, innerHeight);
+      renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+      document.body.appendChild(renderer.domElement);
 
-  for(let i=0;i<=us;i++){
-    let u=i/us*umax;
-    for(let j=0;j<=vs;j++){
-      let t=j/vs*Math.PI*2;
-      let x=u*Math.cos(t);
-      let y=u*Math.sin(t);
-      let z=c*Math.sin(2*t);
-      v.push(x,z,y);
+      controls = new THREE.OrbitControls(camera, renderer.domElement);
+      controls.enableDamping = true;
+      controls.dampingFactor = .06;
+
+      scene.add(new THREE.AmbientLight(0xffffff,.42));
+      const light1 = new THREE.DirectionalLight(0xffffff,1.25);
+      light1.position.set(6,-6,8);
+      scene.add(light1);
+      const light2 = new THREE.PointLight(0x1ebdff,1.2,30);
+      light2.position.set(-6,4,5);
+      scene.add(light2);
+
+      grid = new THREE.GridHelper(22,44,0x28445b,0x142233);
+      scene.add(grid);
+      axes = new THREE.AxesHelper(5);
+      scene.add(axes);
+
+      bind("amp","ampV",1);
+      bind("radius","radiusV",1);
+      bind("freq","freqV",0);
+      bind("twist","twistV",2);
+      bind("radial","radialV",2);
+
+      document.getElementById("mode").onchange = e => { p.mode=e.target.value; build(); };
+      document.getElementById("reset").onclick = resetCamera;
+      document.getElementById("anim").onclick = () => {
+        animateShape = !animateShape;
+        document.getElementById("anim").textContent = animateShape ? "Animazione ON" : "Animazione OFF";
+      };
+      document.getElementById("grid").onclick = () => {
+        gridOn = !gridOn;
+        grid.visible = axes.visible = gridOn;
+        document.getElementById("grid").textContent = gridOn ? "Griglia ON" : "Griglia OFF";
+      };
+      document.getElementById("preset").onclick = () => {
+        setVal("amp",0.9); setVal("radius",5); setVal("freq",2); setVal("twist",0); setVal("radial",0);
+        document.getElementById("mode").value="classic"; p.mode="classic";
+        resetCamera();
+        build();
+      };
+      addEventListener("resize", onResize);
+      if("serviceWorker" in navigator && location.protocol !== "file:"){
+        navigator.serviceWorker.register("./sw.js").catch(()=>{});
+      }
     }
-  }
 
-  for(let i=0;i<us;i++){
-    for(let j=0;j<vs;j++){
-      let a=i*(vs+1)+j;
-      let b=a+vs+1;
-      idx.push(a,b,a+1,b,b+1,a+1);
+    function bind(id,label,dec){
+      const el=document.getElementById(id), lab=document.getElementById(label);
+      const update = () => {
+        p[id] = id==="freq" ? parseInt(el.value) : parseFloat(el.value);
+        lab.textContent = dec===0 ? p[id] : p[id].toFixed(dec);
+        build();
+      };
+      el.oninput = update;
+      update();
     }
-  }
 
-  g.setAttribute("position",new THREE.Float32BufferAttribute(v,3));
-  g.setIndex(idx);
-  g.computeVertexNormals();
+    function setVal(id,val){
+      const el=document.getElementById(id);
+      el.value=val;
+      el.dispatchEvent(new Event("input"));
+    }
 
-  mesh=new THREE.Mesh(g,new THREE.MeshStandardMaterial({color:0x00b7ff,transparent:true,opacity:0.4,side:THREE.DoubleSide}));
-  wire=new THREE.Mesh(g,new THREE.MeshBasicMaterial({color:0xffffff,wireframe:true}));
+    function build(){
+      if(surface) scene.remove(surface);
+      if(wire) scene.remove(wire);
 
-  scene.add(mesh);
-  scene.add(wire);
-}
-build();
+      const us=80, vs=220;
+      const verts=[], idx=[];
+      for(let i=0;i<=us;i++){
+        const u=i/us*p.radius;
+        for(let j=0;j<=vs;j++){
+          const v=j/vs*Math.PI*2;
+          let phase = v;
+          let r = u;
 
-document.getElementById("c").oninput=e=>{c=e.target.value; build();}
-document.getElementById("u").oninput=e=>{umax=e.target.value; build();}
+          if(p.mode==="twist") phase = v + p.twist*u;
+          if(p.mode==="flower") r = u + p.radial*Math.sin(p.freq*v);
 
-function animate(){
-  requestAnimationFrame(animate);
-  mesh.rotation.z+=0.002;
-  wire.rotation.z+=0.002;
-  controls.update();
-  renderer.render(scene,camera);
-}
-animate();
-</script>
+          // Classic still accepts twist/radial gently if sliders are used
+          if(p.mode==="classic"){
+            phase = v + p.twist*u*.35;
+            r = u + p.radial*Math.sin(p.freq*v)*.55;
+          }
+
+          const x = r*Math.cos(phase);
+          const y = r*Math.sin(phase);
+          const z = p.amp*Math.sin(p.freq*v);
+          verts.push(x,z,y);
+        }
+      }
+      for(let i=0;i<us;i++){
+        for(let j=0;j<vs;j++){
+          const a=i*(vs+1)+j, b=a+vs+1;
+          idx.push(a,b,a+1,b,b+1,a+1);
+        }
+      }
+
+      const g = new THREE.BufferGeometry();
+      g.setAttribute("position", new THREE.Float32BufferAttribute(verts,3));
+      g.setIndex(idx);
+      g.computeVertexNormals();
+
+      surface = new THREE.Mesh(g, new THREE.MeshStandardMaterial({
+        color:0x00b7ff, transparent:true, opacity:.34,
+        side:THREE.DoubleSide, metalness:.14, roughness:.32,
+        emissive:0x003344, emissiveIntensity:.28
+      }));
+      wire = new THREE.Mesh(g, new THREE.MeshBasicMaterial({
+        color:0x42edff, wireframe:true, transparent:true, opacity:.58
+      }));
+      scene.add(surface, wire);
+    }
+
+    function loop(){
+      requestAnimationFrame(loop);
+      time += .012;
+      controls.update();
+
+      if(surface && wire){
+        surface.rotation.z += .0018;
+        wire.rotation.z += .0018;
+
+        if(animateShape){
+          const s = 1 + Math.sin(time)*.015;
+          surface.scale.setScalar(s);
+          wire.scale.setScalar(s);
+        }
+      }
+      renderer.render(scene,camera);
+    }
+
+    function resetCamera(){
+      camera.position.set(8,-10,7);
+      controls.target.set(0,0,0);
+      controls.update();
+    }
+
+    function onResize(){
+      camera.aspect=innerWidth/innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(innerWidth,innerHeight);
+    }
+  </script>
 </body>
 </html>

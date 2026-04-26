@@ -1,9 +1,22 @@
 {
   "name": "Parametric Surface Lab",
   "short_name": "SurfaceLab",
+  "description": "A lightweight 3D web app for exploring parametric surfaces directly in the browser.",
   "start_url": "./",
+  "scope": "./",
   "display": "standalone",
   "background_color": "#05070d",
   "theme_color": "#05070d",
-  "icons": []
+  "icons": [
+    {
+      "src": "assets/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "assets/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
 }
