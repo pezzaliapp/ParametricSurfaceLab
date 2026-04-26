@@ -1,0 +1,9 @@
+{
+  "name": "Parametric Surface Lab",
+  "short_name": "SurfaceLab",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#05070d",
+  "theme_color": "#05070d",
+  "icons": []
+}
