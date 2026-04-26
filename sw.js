@@ -1,4 +1,4 @@
-const CACHE = "parametric-surface-lab-v2";
+const CACHE = "parametric-surface-lab-mobile-v1";
 const ASSETS = [
   "./",
   "./index.html",

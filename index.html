@@ -2,49 +2,149 @@
 <html lang="it">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
   <title>Parametric Surface Lab</title>
   <meta name="theme-color" content="#05070d"/>
   <link rel="manifest" href="manifest.json">
   <link rel="icon" href="assets/icon-192.png">
+
   <style>
     :root{
       --bg:#05070d;
-      --panel:rgba(0,0,0,.72);
+      --panel:rgba(0,0,0,.78);
       --cyan:#19b9ff;
       --cyan2:#31eaff;
       --text:#f4fbff;
       --muted:#a9bfd2;
+      --safe-bottom:env(safe-area-inset-bottom);
     }
-    *{box-sizing:border-box}
+
+    *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+
     html,body{
       margin:0;
+      width:100%;
       height:100%;
+      overflow:hidden;
       background:var(--bg);
       color:var(--text);
       font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
-      overflow:hidden;
+      overscroll-behavior:none;
+      touch-action:none;
     }
-    canvas{display:block}
-    #panel{
+
+    canvas{
+      display:block;
+      position:fixed;
+      inset:0;
+      z-index:1;
+      touch-action:none;
+    }
+
+    #topbar{
+      position:fixed;
+      top:calc(12px + env(safe-area-inset-top));
+      left:12px;
+      right:12px;
+      z-index:20;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      pointer-events:none;
+    }
+
+    #brand{
+      background:rgba(0,0,0,.58);
+      border:1px solid rgba(49,234,255,.35);
+      border-radius:999px;
+      padding:9px 13px;
+      font-weight:800;
+      font-size:14px;
+      backdrop-filter:blur(12px);
+      box-shadow:0 0 14px rgba(0,170,255,.28);
+      pointer-events:auto;
+    }
+
+    #openControls{
+      border:none;
+      border-radius:999px;
+      padding:11px 15px;
+      background:linear-gradient(180deg,#25bfff,#1099e6);
+      color:#00111f;
+      font-weight:900;
+      font-size:14px;
+      box-shadow:0 0 18px rgba(0,170,255,.55);
+      pointer-events:auto;
+      cursor:pointer;
+    }
+
+    #desktopPanel{
       position:fixed;
       top:18px;
       left:18px;
       z-index:10;
-      width:330px;
-      max-width:calc(100vw - 36px);
+      width:340px;
       background:var(--panel);
       border:1px solid var(--cyan);
       border-radius:18px;
       padding:16px;
       box-shadow:0 0 24px rgba(0,170,255,.65);
       backdrop-filter:blur(12px);
+      display:block;
     }
+
+    #sheetBackdrop{
+      position:fixed;
+      inset:0;
+      z-index:30;
+      background:rgba(0,0,0,.28);
+      opacity:0;
+      pointer-events:none;
+      transition:opacity .2s ease;
+    }
+
+    #bottomSheet{
+      position:fixed;
+      left:0;
+      right:0;
+      bottom:0;
+      z-index:40;
+      max-height:82dvh;
+      overflow:auto;
+      background:rgba(3,8,14,.94);
+      border-top:1px solid rgba(49,234,255,.55);
+      border-radius:24px 24px 0 0;
+      padding:10px 18px calc(18px + var(--safe-bottom));
+      box-shadow:0 -12px 35px rgba(0,170,255,.28);
+      backdrop-filter:blur(16px);
+      transform:translateY(105%);
+      transition:transform .24s ease;
+      touch-action:pan-y;
+    }
+
+    body.sheet-open #sheetBackdrop{
+      opacity:1;
+      pointer-events:auto;
+    }
+
+    body.sheet-open #bottomSheet{
+      transform:translateY(0);
+    }
+
+    .grabber{
+      width:48px;
+      height:5px;
+      background:#516273;
+      border-radius:999px;
+      margin:2px auto 14px;
+    }
+
     h1{
       margin:0 0 10px;
       font-size:20px;
       letter-spacing:-.02em;
     }
+
     .formula{
       font-family:Georgia,serif;
       color:#e9f7ff;
@@ -53,69 +153,127 @@
       font-weight:700;
       font-size:16px;
     }
+
+    select{
+      width:100%;
+      border:1px solid rgba(49,234,255,.4);
+      border-radius:13px;
+      background:#101722;
+      color:white;
+      padding:12px;
+      margin:6px 0 10px;
+      font-weight:800;
+      font-size:15px;
+    }
+
     .row{
       display:grid;
-      grid-template-columns:92px 1fr 44px;
-      gap:8px;
+      grid-template-columns:95px 1fr 48px;
+      gap:10px;
       align-items:center;
-      margin:10px 0;
-      font-size:13px;
+      margin:12px 0;
+      font-size:14px;
       color:#ecf9ff;
     }
-    input[type=range]{width:100%; accent-color:#159dff}
+
     .value{
       text-align:right;
       color:#d9f7ff;
       font-variant-numeric:tabular-nums;
+      font-weight:700;
     }
+
+    input[type=range]{
+      width:100%;
+      accent-color:#159dff;
+    }
+
     .buttons{
       display:grid;
       grid-template-columns:1fr 1fr;
-      gap:8px;
-      margin-top:12px;
+      gap:9px;
+      margin-top:13px;
     }
-    button,select{
+
+    button, .btn{
       border:1px solid rgba(49,234,255,.4);
-      border-radius:11px;
+      border-radius:13px;
       background:#101722;
       color:white;
-      padding:10px;
-      font-weight:800;
+      padding:12px;
+      font-weight:900;
       cursor:pointer;
+      font-size:14px;
     }
+
     button.primary{
       background:linear-gradient(180deg,#25bfff,#1099e6);
       color:#00111f;
       border:none;
     }
-    select{
-      width:100%;
-      margin:6px 0 8px;
-      font-weight:700;
-    }
+
     .small{
       color:var(--muted);
       font-size:12px;
-      margin-top:8px;
+      margin-top:10px;
       line-height:1.35;
     }
-    #badge{
+
+    #hint{
       position:fixed;
-      right:16px;
-      bottom:14px;
-      z-index:10;
-      color:#7f98aa;
+      bottom:calc(14px + env(safe-area-inset-bottom));
+      left:50%;
+      transform:translateX(-50%);
+      z-index:15;
+      color:#98aebe;
+      background:rgba(0,0,0,.45);
+      border:1px solid rgba(255,255,255,.08);
+      border-radius:999px;
+      padding:8px 12px;
       font-size:12px;
-      opacity:.85;
+      backdrop-filter:blur(10px);
+      pointer-events:none;
     }
-    @media(max-width:700px){
-      #panel{width:300px; transform:scale(.92); transform-origin:top left;}
-      #badge{display:none}
+
+    @media (max-width: 760px){
+      #desktopPanel{display:none}
+      #topbar{display:flex}
+      .row{
+        grid-template-columns:90px 1fr 50px;
+        margin:15px 0;
+        font-size:15px;
+      }
+      input[type=range]{
+        height:34px;
+      }
+      h1{font-size:21px}
+      .formula{font-size:17px}
+      .buttons button{padding:14px 10px}
+    }
+
+    @media (min-width: 761px){
+      #topbar,#bottomSheet,#sheetBackdrop,#hint{display:none}
     }
   </style>
 </head>
+
 <body>
-  <div id="panel">
+  <div id="topbar">
+    <div id="brand">Parametric Surface Lab</div>
+    <button id="openControls">⚙️ Controls</button>
+  </div>
+
+  <div id="desktopPanel"></div>
+
+  <div id="sheetBackdrop"></div>
+  <div id="bottomSheet">
+    <div class="grabber"></div>
+    <div id="mobilePanel"></div>
+  </div>
+
+  <div id="hint">Ruota con un dito · Zoom con due dita</div>
+
+  <template id="controlsTemplate">
     <h1>Parametric Surface Lab</h1>
     <div class="formula">
       x = r cos(v)<br>
@@ -123,46 +281,122 @@
       z = c sin(kv)
     </div>
 
-    <select id="mode">
+    <select class="mode">
       <option value="classic">Classic reglata</option>
       <option value="twist">Twist / torsione</option>
       <option value="flower">Radial flower</option>
     </select>
 
-    <div class="row"><span>Altezza c</span><input id="amp" type="range" min="0" max="5" step="0.1" value="2"><span class="value" id="ampV">2.0</span></div>
-    <div class="row"><span>Raggio u</span><input id="radius" type="range" min="2" max="10" step="0.1" value="5"><span class="value" id="radiusV">5.0</span></div>
-    <div class="row"><span>Frequenza k</span><input id="freq" type="range" min="1" max="12" step="1" value="2"><span class="value" id="freqV">2</span></div>
-    <div class="row"><span>Torsione</span><input id="twist" type="range" min="-2" max="2" step="0.05" value="0"><span class="value" id="twistV">0.00</span></div>
-    <div class="row"><span>Radiale</span><input id="radial" type="range" min="0" max="2.5" step="0.05" value="0"><span class="value" id="radialV">0.00</span></div>
+    <div class="row"><span>Altezza c</span><input class="amp" type="range" min="0" max="5" step="0.1" value="2"><span class="value ampV">2.0</span></div>
+    <div class="row"><span>Raggio u</span><input class="radius" type="range" min="2" max="10" step="0.1" value="5"><span class="value radiusV">5.0</span></div>
+    <div class="row"><span>Frequenza k</span><input class="freq" type="range" min="1" max="12" step="1" value="2"><span class="value freqV">2</span></div>
+    <div class="row"><span>Torsione</span><input class="twist" type="range" min="-2" max="2" step="0.05" value="0"><span class="value twistV">0.00</span></div>
+    <div class="row"><span>Radiale</span><input class="radial" type="range" min="0" max="2.5" step="0.05" value="0"><span class="value radialV">0.00</span></div>
 
     <div class="buttons">
-      <button class="primary" id="reset">Reset vista</button>
-      <button id="anim">Animazione ON</button>
-      <button id="grid">Griglia ON</button>
-      <button id="preset">Preset bello</button>
+      <button class="primary reset">Reset vista</button>
+      <button class="anim">Animazione ON</button>
+      <button class="grid">Griglia ON</button>
+      <button class="preset">Preset bello</button>
     </div>
-    <div class="small">Mouse/touch: ruota, zoom, sposta. Tutto gira nel browser, senza backend.</div>
-  </div>
-  <div id="badge">PezzaliAPP · ParametricSurfaceLab</div>
+
+    <div class="small">Su smartphone i controlli restano nascosti. La scena deve respirare.</div>
+  </template>
 
   <script src="https://unpkg.com/three@0.128.0/build/three.min.js"></script>
   <script src="https://unpkg.com/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+
   <script>
     let scene, camera, renderer, controls, surface, wire, grid, axes;
     let time = 0, animateShape = true, gridOn = true;
 
     const p = { amp:2, radius:5, freq:2, twist:0, radial:0, mode:"classic" };
 
-    init();
+    setupPanels();
+    init3D();
     build();
     loop();
 
-    function init(){
+    function setupPanels(){
+      const tpl = document.getElementById("controlsTemplate");
+      document.getElementById("desktopPanel").appendChild(tpl.content.cloneNode(true));
+      document.getElementById("mobilePanel").appendChild(tpl.content.cloneNode(true));
+
+      document.querySelectorAll("#desktopPanel, #mobilePanel").forEach(panel => bindPanel(panel));
+
+      document.getElementById("openControls").onclick = () => document.body.classList.add("sheet-open");
+      document.getElementById("sheetBackdrop").onclick = () => document.body.classList.remove("sheet-open");
+
+      let startY = 0;
+      const sheet = document.getElementById("bottomSheet");
+      sheet.addEventListener("touchstart", e => startY = e.touches[0].clientY, {passive:true});
+      sheet.addEventListener("touchend", e => {
+        const endY = e.changedTouches[0].clientY;
+        if(endY - startY > 80) document.body.classList.remove("sheet-open");
+      }, {passive:true});
+    }
+
+    function bindPanel(panel){
+      const get = cls => panel.querySelector("." + cls);
+
+      get("mode").onchange = e => {
+        p.mode = e.target.value;
+        syncControls();
+        build();
+      };
+
+      bindSlider(panel, "amp", "ampV", 1);
+      bindSlider(panel, "radius", "radiusV", 1);
+      bindSlider(panel, "freq", "freqV", 0);
+      bindSlider(panel, "twist", "twistV", 2);
+      bindSlider(panel, "radial", "radialV", 2);
+
+      get("reset").onclick = resetCamera;
+      get("anim").onclick = () => {
+        animateShape = !animateShape;
+        document.querySelectorAll(".anim").forEach(b => b.textContent = animateShape ? "Animazione ON" : "Animazione OFF");
+      };
+      get("grid").onclick = () => {
+        gridOn = !gridOn;
+        if(grid) grid.visible = gridOn;
+        if(axes) axes.visible = gridOn;
+        document.querySelectorAll(".grid").forEach(b => b.textContent = gridOn ? "Griglia ON" : "Griglia OFF");
+      };
+      get("preset").onclick = () => {
+        Object.assign(p, { amp:.9, radius:5, freq:2, twist:0, radial:0, mode:"classic" });
+        syncControls();
+        resetCamera();
+        build();
+      };
+    }
+
+    function bindSlider(panel, key, label, dec){
+      const input = panel.querySelector("." + key);
+      input.oninput = e => {
+        p[key] = key === "freq" ? parseInt(e.target.value) : parseFloat(e.target.value);
+        syncControls();
+        build();
+      };
+    }
+
+    function syncControls(){
+      document.querySelectorAll(".mode").forEach(el => el.value = p.mode);
+      ["amp","radius","freq","twist","radial"].forEach(key => {
+        document.querySelectorAll("." + key).forEach(el => el.value = p[key]);
+      });
+      document.querySelectorAll(".ampV").forEach(el => el.textContent = p.amp.toFixed(1));
+      document.querySelectorAll(".radiusV").forEach(el => el.textContent = p.radius.toFixed(1));
+      document.querySelectorAll(".freqV").forEach(el => el.textContent = p.freq);
+      document.querySelectorAll(".twistV").forEach(el => el.textContent = p.twist.toFixed(2));
+      document.querySelectorAll(".radialV").forEach(el => el.textContent = p.radial.toFixed(2));
+    }
+
+    function init3D(){
       scene = new THREE.Scene();
       scene.background = new THREE.Color(0x05070d);
 
       camera = new THREE.PerspectiveCamera(55, innerWidth/innerHeight, .1, 1000);
-      camera.position.set(8,-10,7);
+      setCameraByDevice();
 
       renderer = new THREE.WebGLRenderer({antialias:true});
       renderer.setSize(innerWidth, innerHeight);
@@ -172,11 +406,15 @@
       controls = new THREE.OrbitControls(camera, renderer.domElement);
       controls.enableDamping = true;
       controls.dampingFactor = .06;
+      controls.enablePan = true;
+      controls.minDistance = 4;
+      controls.maxDistance = 24;
 
       scene.add(new THREE.AmbientLight(0xffffff,.42));
       const light1 = new THREE.DirectionalLight(0xffffff,1.25);
       light1.position.set(6,-6,8);
       scene.add(light1);
+
       const light2 = new THREE.PointLight(0x1ebdff,1.2,30);
       light2.position.set(-6,4,5);
       scene.add(light2);
@@ -186,58 +424,31 @@
       axes = new THREE.AxesHelper(5);
       scene.add(axes);
 
-      bind("amp","ampV",1);
-      bind("radius","radiusV",1);
-      bind("freq","freqV",0);
-      bind("twist","twistV",2);
-      bind("radial","radialV",2);
-
-      document.getElementById("mode").onchange = e => { p.mode=e.target.value; build(); };
-      document.getElementById("reset").onclick = resetCamera;
-      document.getElementById("anim").onclick = () => {
-        animateShape = !animateShape;
-        document.getElementById("anim").textContent = animateShape ? "Animazione ON" : "Animazione OFF";
-      };
-      document.getElementById("grid").onclick = () => {
-        gridOn = !gridOn;
-        grid.visible = axes.visible = gridOn;
-        document.getElementById("grid").textContent = gridOn ? "Griglia ON" : "Griglia OFF";
-      };
-      document.getElementById("preset").onclick = () => {
-        setVal("amp",0.9); setVal("radius",5); setVal("freq",2); setVal("twist",0); setVal("radial",0);
-        document.getElementById("mode").value="classic"; p.mode="classic";
-        resetCamera();
-        build();
-      };
       addEventListener("resize", onResize);
+
       if("serviceWorker" in navigator && location.protocol !== "file:"){
         navigator.serviceWorker.register("./sw.js").catch(()=>{});
       }
     }
 
-    function bind(id,label,dec){
-      const el=document.getElementById(id), lab=document.getElementById(label);
-      const update = () => {
-        p[id] = id==="freq" ? parseInt(el.value) : parseFloat(el.value);
-        lab.textContent = dec===0 ? p[id] : p[id].toFixed(dec);
-        build();
-      };
-      el.oninput = update;
-      update();
-    }
-
-    function setVal(id,val){
-      const el=document.getElementById(id);
-      el.value=val;
-      el.dispatchEvent(new Event("input"));
+    function setCameraByDevice(){
+      if(innerWidth <= 760){
+        camera.position.set(7,-11,6.5);
+      } else {
+        camera.position.set(8,-10,7);
+      }
+      camera.lookAt(0,0,0);
     }
 
     function build(){
       if(surface) scene.remove(surface);
       if(wire) scene.remove(wire);
 
-      const us=80, vs=220;
+      const mobile = innerWidth <= 760;
+      const us = mobile ? 58 : 80;
+      const vs = mobile ? 150 : 220;
       const verts=[], idx=[];
+
       for(let i=0;i<=us;i++){
         const u=i/us*p.radius;
         for(let j=0;j<=vs;j++){
@@ -248,7 +459,6 @@
           if(p.mode==="twist") phase = v + p.twist*u;
           if(p.mode==="flower") r = u + p.radial*Math.sin(p.freq*v);
 
-          // Classic still accepts twist/radial gently if sliders are used
           if(p.mode==="classic"){
             phase = v + p.twist*u*.35;
             r = u + p.radial*Math.sin(p.freq*v)*.55;
@@ -260,6 +470,7 @@
           verts.push(x,z,y);
         }
       }
+
       for(let i=0;i<us;i++){
         for(let j=0;j<vs;j++){
           const a=i*(vs+1)+j, b=a+vs+1;
@@ -273,13 +484,23 @@
       g.computeVertexNormals();
 
       surface = new THREE.Mesh(g, new THREE.MeshStandardMaterial({
-        color:0x00b7ff, transparent:true, opacity:.34,
-        side:THREE.DoubleSide, metalness:.14, roughness:.32,
-        emissive:0x003344, emissiveIntensity:.28
+        color:0x00b7ff,
+        transparent:true,
+        opacity:.34,
+        side:THREE.DoubleSide,
+        metalness:.14,
+        roughness:.32,
+        emissive:0x003344,
+        emissiveIntensity:.28
       }));
+
       wire = new THREE.Mesh(g, new THREE.MeshBasicMaterial({
-        color:0x42edff, wireframe:true, transparent:true, opacity:.58
+        color:0x42edff,
+        wireframe:true,
+        transparent:true,
+        opacity:.58
       }));
+
       scene.add(surface, wire);
     }
 
@@ -302,16 +523,20 @@
     }
 
     function resetCamera(){
-      camera.position.set(8,-10,7);
+      setCameraByDevice();
       controls.target.set(0,0,0);
       controls.update();
+      document.body.classList.remove("sheet-open");
     }
 
     function onResize(){
       camera.aspect=innerWidth/innerHeight;
       camera.updateProjectionMatrix();
       renderer.setSize(innerWidth,innerHeight);
+      build();
     }
+
+    syncControls();
   </script>
 </body>
 </html>
